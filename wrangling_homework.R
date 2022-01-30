@@ -2,6 +2,7 @@
 #For full credit, provide answers for at least 7/10
 
 #List names of students collaborating with: 
+#Merab Gomez 
 
 ### SETUP: RUN THIS BEFORE STARTING ----------
 
@@ -16,7 +17,10 @@ ds <- read_csv("data_raw/rolling_stone_500.csv")
 #Use typeof to check that your conversion succeeded
 
 #ANSWER
-
+glimpse(ds)
+ds$Year <- as.numeric(ds$Year)
+typeof(ds$Year)
+#is double essentially the same as numeric or will it cause problems later? 
 
 ### Question 2 ---------- 
 
@@ -24,6 +28,43 @@ ds <- read_csv("data_raw/rolling_stone_500.csv")
 # change ds so that all of the variables are lowercase
 
 #ANSWER
+#tried this (below) 
+rename_with(ds, ~tolower, cols=everything )
+#got 
+#Error in names[cols] <- .fn(names[cols], ...) : 
+ # incompatible types (from closure to character) in subassignment type fix
+
+#tried 
+rename(ds, "Rank" = "rank")
+# got error that "column 'rank' doesn't exist" 
+
+#tried 
+ds <- ds %>%
+  rename(all_of(ds), "Rank" = "rank")
+#got error 
+#Error: Must rename columns with a valid subscript vector.
+#x Subscript has the wrong type `spec_tbl_df<
+ # Rank  : double
+#Song  : character
+#Artist: character
+#Year  : double
+#>`.
+#ℹ It must be numeric or character.
+
+#tried
+dplyr::rename(ds, ~tolower, cols=everything)
+#got error that "Formula shorthand must be wrapped in "Where" 
+
+#then tried
+ds <- ds %>%
+  dplyr::rename(ds, ~tolower, cols=everything)
+#got same valid subscript vector error 
+
+#tried 
+ds <- ds %>% 
+  `names<-`(tolower(names(.)))
+#and this worked but I don't know why?? 
+#how does it know that names means the column names? 
 
 ### Question 3 ----------
 
@@ -32,12 +73,14 @@ ds <- read_csv("data_raw/rolling_stone_500.csv")
 # Hint: read the documentation for ?floor
 
 #ANSWER
+mutate(ds, decade= (floor(ds$year/ 10) * 10))
 
 ### Question 4 ----------
 
 # Sort the dataset by rank so that 1 is at the top
 
 #ANSWER
+ds <- arrange(ds, rank)
 
 ### Question 5 ----------
 
@@ -45,7 +88,7 @@ ds <- read_csv("data_raw/rolling_stone_500.csv")
 # That just has the artists and songs for the top 10 songs
 
 #ANSWER
-
+top10 <- slice_head(ds, n=10)
 
 ### Question 6 ----------
 
@@ -53,7 +96,8 @@ ds <- read_csv("data_raw/rolling_stone_500.csv")
 # of all songs on the full list. Save it to a new tibble called "ds_sum"
 
 #ANSWER
-
+ds_sum <- ds %>% summarize(min_year = min(year, na.rm=TRUE), max_year = max(year, na.rm=TRUE), avg_year = mean(year, na.rm=TRUE))
+print(ds_sum)
 
 ### Question 7 ----------
 
@@ -62,6 +106,14 @@ ds <- read_csv("data_raw/rolling_stone_500.csv")
 # Use one filter command only, and sort the responses by year
 
 #ANSWER
+#tried 
+filter(ds, year == c("1879", "1980", "2020"))
+# got error In year == c("1879", "1980", "2020") :
+#longer object length is not a multiple of shorter object length
+
+filter(ds, year %in% c(1879, 2020, 1980)) %>% 
+  arrange(desc(year))
+#or arrange(ds,year) would be better? 
 
 
 ### Question 8 ---------- 
@@ -73,7 +125,12 @@ ds <- read_csv("data_raw/rolling_stone_500.csv")
 # find the correct oldest, averag-ist, and most recent songs
 
 #ANSWER
-
+ds <- ds %>% mutate(year = ifelse(year == 1879,1979, year)) %>%
+  mutate(ds, decade= (floor(ds$year/ 10) * 10))
+ds_sum <- ds %>% summarize(min_year = min(year, na.rm=TRUE), max_year = max(year, na.rm=TRUE), avg_year = mean(year, na.rm=TRUE))
+print(ds_sum)
+filter(ds, year %in% c(1937, 1981, 2020)) %>% 
+  arrange(desc(year))
 
 ### Question 9 ---------
 
@@ -84,7 +141,10 @@ ds <- read_csv("data_raw/rolling_stone_500.csv")
 # Use the pipe %>% to string the commands together
 
 #ANSWER
+ds %>% group_by(decade) %>%
+  summarize(mean_rank = mean(rank, na.rm=TRUE), n = n()) 
 
+#gave me a table that is sorted by decade and rank, but there are 2 NA's? Where did they come from?
 
 ### Question 10 --------
 
@@ -94,5 +154,15 @@ ds <- read_csv("data_raw/rolling_stone_500.csv")
 # Use the pipe %>% to string the commands together
 
 #ANSWER
+ds %>% count(decade) %>%
+  slice_max(order_by = n)
 
+#A tibble: 1 × 2
+#decade     n
+#<dbl> <int>
+#  1   1970   143
+
+#other questions: 
+#what does "Source on Save" box mean on R (next to the save button) and do I need to click it?? 
+#lots of things in help show data as .ds - should I have included the . in mine? 
   
